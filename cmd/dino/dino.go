@@ -45,6 +45,7 @@ func main() {
 func initdb(c *cli.Context) error {
 	path := c.Args().First()
 	if path == "" {
+		path = "."
 		return cli.NewExitError("path must be specified", 1)
 	}
 	db, err := dino.Create(path)

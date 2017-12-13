@@ -48,6 +48,7 @@ func Create(path string) (*DB, error) {
 	return db, nil
 }
 
+// Open existing Database
 func Open(path string) (*DB, error) {
 	db := newDB(path)
 	if err := db.loadMeta(); err != nil {
@@ -56,11 +57,12 @@ func Open(path string) (*DB, error) {
 	return db, nil
 }
 
+// Close opened database
 func (db *DB) Close() error {
 	return db.saveMeta()
 }
 
-func (db *DB) AddTable(name string) {
+func (db *DB) CreateTable(name string) {
 	db.tables[name] = newTable()
 }
 

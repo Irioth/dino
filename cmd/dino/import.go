@@ -1,11 +1,9 @@
-package dino
+package main
 
 import (
 	"bufio"
 	"fmt"
 	"io"
-
-	"gopkg.in/yaml.v2"
 )
 
 func (db *DB) Import(table string, r io.Reader) error {
