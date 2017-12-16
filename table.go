@@ -1,62 +1,79 @@
 package dino
 
 import (
-	"bytes"
-	"encoding/gob"
+	"fmt"
+	"io"
 	"path/filepath"
+
+	"github.com/kr/pretty"
 )
 
-type column struct {
+type Column struct {
 	name string
 	path string
+
+	data columnData
 }
 
-func (c *column) AddValue(index int, value interface{}) {
+type columnData interface {
+	AddValue(index int, value interface{})
+}
 
+func (c *Column) AddValue(index int, value interface{}) {
+	c.data.AddValue(index, value)
+}
+
+func (c *Column) Dump(w io.Writer) {
+	pretty.Fprintf(w, "%# v", c.data)
+}
+
+type columnDataFactory interface {
+	NewColumnData() columnData
 }
 
 type Table struct {
 	name    string
 	path    string
-	columns map[string]*column
+	columns map[string]*Column
 	size    int
+	factory columnDataFactory
 }
 
-func (t *Table) GobEncode() ([]byte, error) {
-	var x struct {
-		name    string
-		path    string
-		columns map[string]*column
-		size    int
-	} = *t
-	var b bytes.Buffer
-	if err := gob.NewEncoder(&b).Encode(&x); err != nil {
-		return err
+func newTable(name, path string, factory columnDataFactory) *Table {
+	return &Table{
+		name:    name,
+		path:    path,
+		columns: make(map[string]*Column),
+		size:    0,
+		factory: factory,
 	}
-	return b.Bytes(), nil
 }
 
-func newTable(name, path string) *Table {
-	return &Table{name, path, make(map[string]*column), 0}
-}
-
-func (t *Table) Name() string { return t.name }
-func (t *Table) Size() int    { return t.size }
+func (t *Table) Name() string               { return t.name }
+func (t *Table) RowsCount() int             { return t.size }
+func (t *Table) Column(name string) *Column { return t.columns[name] }
 
 func (t *Table) AppendRow(data map[string]interface{}) {
 	for k, v := range data {
 		c, ok := t.columns[k]
 		if !ok {
 			c = t.сreateColumn(k)
+			fmt.Println("add new column", k)
 		}
 		c.AddValue(t.size, v)
 	}
 	t.size++
 }
 
-func (t *Table) сreateColumn(name string) *column {
+func (t *Table) сreateColumn(name string) *Column {
 	if _, ok := t.columns[name]; ok {
 		panic("column already exists")
 	}
-	t.columns[name] = &column{name, filepath.Join(t.path, name)}
+	c := &Column{
+		name: name,
+		path: filepath.Join(t.path, name),
+		data: t.factory.NewColumnData(),
+	}
+	t.columns[name] = c
+	return c
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/Irioth/dino"
@@ -35,7 +34,7 @@ func main() {
 			Name:      "import",
 			Usage:     "import data to table",
 			ArgsUsage: "<path> <table>",
-			Action:    importdata,
+			Action:    importAction,
 		},
 	}
 
@@ -76,33 +75,7 @@ func info(c *cli.Context) (err error) {
 		}
 	}()
 
-	fmt.Println(db.Dump())
-
-	return nil
-}
-
-func importdata(c *cli.Context) (err error) {
-	path := c.Args().First()
-	if path == "" {
-		return cli.NewExitError("path must be specified", 1)
-	}
-	db, err := dino.Open(path)
-	if err != nil {
-		return cli.NewExitError(err.Error(), 1)
-	}
-	defer func() {
-		err = db.Close()
-		if err != nil {
-			return
-		}
-	}()
-
-	table := c.Args().Get(1)
-
-	if err := db.Import(table, os.Stdin); err != nil {
-		fmt.Println("error", err.Error())
-		return cli.NewExitError(err.Error(), 1)
-	}
+	db.DumpMeta(os.Stdout)
 
 	return nil
 }
