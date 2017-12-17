@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
-
-	"github.com/kr/pretty"
 )
 
 type Column struct {
@@ -17,6 +15,8 @@ type Column struct {
 
 type columnData interface {
 	AddValue(index int, value interface{})
+	Load(fname string)
+	Save(fname string)
 }
 
 func (c *Column) AddValue(index int, value interface{}) {
@@ -24,7 +24,7 @@ func (c *Column) AddValue(index int, value interface{}) {
 }
 
 func (c *Column) Dump(w io.Writer) {
-	pretty.Fprintf(w, "%# v", c.data)
+	fmt.Fprintf(w, "%# v", c.data)
 }
 
 type columnDataFactory interface {

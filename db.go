@@ -40,7 +40,16 @@ func Open(path string) (*DB, error) {
 
 // Close opened database
 func (db *DB) Close() error {
-	return db.saveMeta()
+	err := db.saveMeta()
+	if err != nil {
+		return err
+	}
+	for _, t := range db.tables {
+		for _, c := range t.columns {
+			c.data.Save(c.path)
+		}
+	}
+	return nil
 }
 
 // Table returns existed table in Database or create new one with defualt params

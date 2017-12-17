@@ -40,6 +40,7 @@ func (db *DB) loadMeta() error {
 		t.factory = ColumnFactory{}
 		for _, c := range t.columns {
 			c.data = t.factory.NewColumnData()
+			c.data.Load(c.path)
 		}
 
 	}
