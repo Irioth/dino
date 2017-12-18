@@ -46,7 +46,7 @@ func (db *DB) Close() error {
 	}
 	for _, t := range db.tables {
 		for _, c := range t.columns {
-			c.data.Save(c.path)
+			c.Save()
 		}
 	}
 	return nil
@@ -61,3 +61,19 @@ func (db *DB) Table(name string) *Table {
 	db.tables[name] = t
 	return t
 }
+
+// func (db *DB) AppendRow(table string, data map[string]interface{}) {
+// 	for k, v := range data {
+// 		c, ok := db.columns[table+"."+k]
+// 		if !ok {
+// 			c = t.сreateColumn(k)
+// 			fmt.Println("add new column", k)
+// 		}
+// 		c.AddValue(t.size, v)
+// 	}
+// 	t.size++
+// }
+
+// func (db *DB) SearchQuery(query string) ResultStream {
+
+// }

@@ -7,8 +7,9 @@ import (
 )
 
 type Column struct {
-	name string
-	path string
+	name            string
+	path            string
+	loaded, changed bool
 
 	data columnData
 }
@@ -19,11 +20,28 @@ type columnData interface {
 	Save(fname string)
 }
 
+func (c *Column) checkLoaded() {
+	if !c.loaded {
+		c.data.Load(c.path)
+		c.loaded = true
+	}
+}
+
+func (c *Column) Save() {
+	if c.changed {
+		c.data.Save(c.path)
+		c.changed = false
+	}
+}
+
 func (c *Column) AddValue(index int, value interface{}) {
+	c.checkLoaded()
 	c.data.AddValue(index, value)
+	c.changed = true
 }
 
 func (c *Column) Dump(w io.Writer) {
+	c.checkLoaded()
 	fmt.Fprintf(w, "%# v", c.data)
 }
 

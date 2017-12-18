@@ -54,6 +54,6 @@ func importData(table *dino.Table, r io.Reader) error {
 	if err := s.Err(); err != nil {
 		return err
 	}
-	table.Column("api").Dump(os.Stdout)
+	// table.Column("api").Dump(os.Stdout)
 	return nil
 }

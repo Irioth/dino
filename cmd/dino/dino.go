@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/Irioth/dino"
+	"github.com/Irioth/dino/query/search"
 	"github.com/urfave/cli"
 )
 
@@ -35,6 +37,12 @@ func main() {
 			Usage:     "import data to table",
 			ArgsUsage: "<path> <table>",
 			Action:    importAction,
+		},
+		{
+			Name:      "search",
+			Usage:     "search over database",
+			ArgsUsage: "<path> <query>",
+			Action:    searchAction,
 		},
 	}
 
@@ -76,6 +84,33 @@ func info(c *cli.Context) (err error) {
 	}()
 
 	db.DumpMeta(os.Stdout)
+
+	return nil
+}
+
+func searchAction(c *cli.Context) (err error) {
+	path := c.Args().First()
+	if path == "" {
+		return cli.NewExitError("path must be specified", 1)
+	}
+	db, err := dino.Open(path)
+	if err != nil {
+		return cli.NewExitError(err.Error(), 1)
+	}
+	defer func() {
+		err = db.Close()
+		if err != nil {
+			return
+		}
+	}()
+
+	query, err := search.ParseQuery(c.Args()[1])
+	if err != nil {
+		fmt.Println(err)
+		return cli.NewExitError(err.Error(), 1)
+	}
+
+	fmt.Printf("%# v", query)
 
 	return nil
 }
