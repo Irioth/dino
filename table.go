@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"reflect"
+	"unsafe"
 )
 
 type Column struct {
@@ -16,6 +18,7 @@ type Column struct {
 
 type columnData interface {
 	AddValue(index int, value interface{})
+	Get(index int) interface{}
 	Load(fname string)
 	Save(fname string)
 }
@@ -38,6 +41,11 @@ func (c *Column) AddValue(index int, value interface{}) {
 	c.checkLoaded()
 	c.data.AddValue(index, value)
 	c.changed = true
+}
+
+func (c *Column) Get(index int) interface{} {
+	c.checkLoaded()
+	return c.data.Get(index)
 }
 
 func (c *Column) Dump(w io.Writer) {
@@ -70,6 +78,41 @@ func newTable(name, path string, factory columnDataFactory) *Table {
 func (t *Table) Name() string               { return t.name }
 func (t *Table) RowsCount() int             { return t.size }
 func (t *Table) Column(name string) *Column { return t.columns[name] }
+func (t *Table) ColumnNew(name string) *Column {
+	if c, ok := t.columns[name]; ok {
+		return c
+	}
+	return t.сreateColumn(dup(name))
+}
+
+func dup(x string) string {
+	data := unsafeStrToByte(x)
+	return string(data)
+}
+
+func unsafeStrToByte(s string) []byte {
+	strHeader := (*reflect.StringHeader)(unsafe.Pointer(&s))
+
+	var b []byte
+	byteHeader := (*reflect.SliceHeader)(unsafe.Pointer(&b))
+	byteHeader.Data = strHeader.Data
+
+	// need to take the length of s here to ensure s is live until after we update b's Data
+	// field since the garbage collector can collect a variable once it is no longer used
+	// not when it goes out of scope, for more details see https://github.com/golang/go/issues/9046
+	l := len(s)
+	byteHeader.Len = l
+	byteHeader.Cap = l
+	return b
+}
+
+func (t *Table) Columns() []string {
+	var s []string
+	for c := range t.columns {
+		s = append(s, c)
+	}
+	return s
+}
 
 func (t *Table) AppendRow(data map[string]interface{}) {
 	for k, v := range data {
@@ -80,6 +123,10 @@ func (t *Table) AppendRow(data map[string]interface{}) {
 		}
 		c.AddValue(t.size, v)
 	}
+	t.size++
+}
+
+func (t *Table) IncRows() {
 	t.size++
 }
 

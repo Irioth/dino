@@ -1,14 +1,14 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/Irioth/dino"
+	jsoniter "github.com/json-iterator/go"
 	"github.com/urfave/cli"
-	yaml "gopkg.in/yaml.v2"
 )
 
 func importAction(c *cli.Context) (err error) {
@@ -30,30 +30,33 @@ func importAction(c *cli.Context) (err error) {
 		return cli.NewExitError(err.Error(), 1)
 	}
 
+	time.Sleep(time.Minute)
+
 	return nil
 }
 
 func importData(table *dino.Table, r io.Reader) error {
-	fmt.Println("import data into", table.Name())
-	s := bufio.NewScanner(r)
-	cnt := 0
-	for s.Scan() {
-		m := make(map[string]interface{})
 
-		if err := yaml.Unmarshal([]byte(s.Text()), &m); err != nil {
-			return err
-		}
-		table.AppendRow(m)
+	fmt.Println("import data into", table.Name())
+
+	it := jsoniter.Parse(jsoniter.ConfigFastest, os.Stdin, 65536)
+	cnt := 0
+	defer func() { println(cnt) }()
+	for it.ReadObjectCB(func(it *jsoniter.Iterator, field string) bool {
+		c := table.ColumnNew(field)
+		value := it.ReadString()
+		c.AddValue(table.RowsCount(), value)
+		return true
+	}) {
+		table.IncRows()
 		cnt++
 		if cnt&0xffff == 0 {
 			fmt.Println("Imported", cnt, "rows")
 		}
+		// println("-------------")
 	}
-	fmt.Println("Imported", cnt, "rows")
-	fmt.Println("Total size", table.RowsCount())
-	if err := s.Err(); err != nil {
-		return err
-	}
-	// table.Column("api").Dump(os.Stdout)
-	return nil
+	fmt.Println("Total imported", cnt)
+	fmt.Println("Total table size:", table.RowsCount())
+
+	return it.Error
 }

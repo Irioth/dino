@@ -109,8 +109,13 @@ func searchAction(c *cli.Context) (err error) {
 		fmt.Println(err)
 		return cli.NewExitError(err.Error(), 1)
 	}
-
 	fmt.Printf("%# v", query)
+
+	_, err = search.NewExecutor(db).Run(query)
+	if err != nil {
+		fmt.Println(err)
+		return cli.NewExitError(err.Error(), 1)
+	}
 
 	return nil
 }
