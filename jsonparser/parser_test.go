@@ -49,12 +49,32 @@ func TestJSONTestSuite(t *testing.T) {
 		t.FailNow()
 	}
 
+	cnty, passedy := 0, 0
+	cntn, passedn := 0, 0
 	for _, file := range f {
 		res := testCase(filepath.Join("test_parsing", file.Name()))
-		if res {
+		if strings.HasPrefix(file.Name(), "y") {
+			cnty++
+			if res {
+				passedy++
+			} else {
+				fmt.Println(file.Name())
+			}
+		}
+		if strings.HasPrefix(file.Name(), "n") {
+			cntn++
+			if !res {
+				passedn++
+			} else {
+				fmt.Println(file.Name())
+			}
+		}
+		if strings.HasPrefix(file.Name(), "i") {
 			fmt.Println(file.Name(), res)
 		}
 	}
+	fmt.Println("Positive tests:", passedy, "/", cnty)
+	fmt.Println("Negative tests:", passedn, "/", cntn)
 }
 
 func testCase(name string) bool {
@@ -65,9 +85,10 @@ func testCase(name string) bool {
 	defer f.Close()
 
 	iter := NewIterator(nil, f)
-	success := iter.ReadObject(func(iter *Iterator, field string) bool {
-		iter.ReadString()
-		return true
-	})
+	success := iter.Skip() && iter.WhatIsNext() == EOF
+	// success := iter.ReadObject(func(iter *Iterator, field string) bool {
+	// 	iter.ReadString()
+	// 	return true
+	// })
 	return success
 }
